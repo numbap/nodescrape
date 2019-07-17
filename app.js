@@ -1,13 +1,14 @@
+// Load dependencies
 const chalk = require('chalk')
 const yargs = require('yargs')
-const loadUrls = require('./loadurls')
-const { updateRecord } = require('./scrape.js')
-
+const loadUrls = require('./functions/loadurls')
+const { updateRecord } = require('./functions/scrape')
+const { connector } = require('./db/db')
 
 // Customize yargs version
 yargs.version('1.1.0')
 
-// Create add command
+// Create add command to load file
 yargs.command({
     command: 'load',
     describe: 'Load a list of of URLs into the database',
@@ -19,66 +20,42 @@ yargs.command({
             default: './urls.txt'
         },
         dbConn: {
-            describe: 'Location to connect to MongoDB. Includes address, port and database name. Default: mongodb://localhost:27017/scrapedb',
+            describe: 'Location to connect to MongoDB. Includes address, user, password, port and database name. Default: mongodb://localhost:27017/scrapedb',
             demandOption: false,
             type: 'string',
             default: 'mongodb://localhost:27017/scrapedb'
-        },
-        dbuser: {
-            describe: 'Username for MongoDBLocation Default: none',
-            demandOption: false,
-            type: 'string',
-            default: undefined
-        },
-        dbPass: {
-            describe: 'Password for MongoDBLocation Default: none',
-            demandOption: false,
-            type: 'string',
-            default: undefined
         }
     },
     handler: function (argv) {
         console.log('started')
+        // Start loading the URLs into the database
         loadUrls(argv.list, argv.dbConn)
         console.log('list: ' + argv.list)
         console.log('dbConn: ' + argv.dbConn)
-        console.log('dbuser: ' + argv.dbuser)
-        console.log('dbPass: ' + argv.dbPass)
     }
 })
 
-
-
+// Commands for scraping
 yargs.command({
     command: 'scrape',
     describe: 'Begin scraping web site content and saving results to database',
     builder: {
         dbConn: {
-            describe: 'Location to connect to MongoDB. Includes address, port and database name. Default: mongodb://localhost:27017/scrapedb',
+            describe: 'Location to connect to MongoDB. Includes address, port, user, password and database name. Default: mongodb://localhost:27017/scrapedb',
             demandOption: false,
             type: 'string',
             default: 'mongodb://localhost:27017/scrapedb'
-        },
-        dbuser: {
-            describe: 'Username for MongoDBLocation Default: none',
-            demandOption: false,
-            type: 'string',
-            default: undefined
-        },
-        dbPass: {
-            describe: 'Password for MongoDBLocation Default: none',
-            demandOption: false,
-            type: 'string',
-            default: undefined
         }
     },
     handler: function (argv) {
-        updateRecord(argv.dbConn)
+        connector(argv.dbConn, '', '')
+        // Load 10000 non-blocking async instances for faster scraping
+        for (i = 0; i < 10000; i++) {
+            // Start scraping urls, one at a time
+            updateRecord().catch(e => console.log(e))
+        }
         console.log('dbConn: ' + argv.dbConn)
-        console.log('dbuser: ' + argv.dbuser)
-        console.log('dbPass: ' + argv.dbPass)
     }
 })
-
 
 yargs.parse()

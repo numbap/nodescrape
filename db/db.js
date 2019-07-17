@@ -1,3 +1,4 @@
+// Load dependencies
 const mongoose = require('mongoose')
 var validator = require('validator');
 
@@ -7,10 +8,17 @@ const connector = (url, user, pass) => {
     mongoose.connect(url, {
         useNewUrlParser: true,
         useCreateIndex: true
-    })
+    }, function(err){
+        if(err){
+          console.log('Error connecting to: '+ url)
+        }
+        else{
+          console.log('Connected to: '+ url)
+        }
+      })
 }
 
-
+// Mongoose model for the web page record in the database
 const WebPage = mongoose.model('WebPage', {
     url: {
         type: String,
